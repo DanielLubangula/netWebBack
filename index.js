@@ -40,6 +40,10 @@ app.use('/api/admin', require('./routes/admin.routes.js'));
 app.use('/api/user', require('./routes/userSettings.routes.js'));
 app.use('/api/notifications', require('./routes/notifications.routes.js'));
 
+app.get("/test", (req, res) => {
+  res.json({ message: "API is working!" });
+});
+
 // Création du serveur HTTP
 const server = http.createServer(app);
 
