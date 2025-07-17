@@ -13,7 +13,7 @@ require('./config/passport');
 const app = express(); 
 // Configuration CORS plus précise
 const corsOptions = {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Remplacez par votre URL frontend
+    origin: process.env.FRONTEND_URL || 'https://netwebquiz.onrender.com/', // Remplacez par votre URL frontend
     credentials: true, // Autorise les credentials
     optionsSuccessStatus: 200 // Pour les navigateurs legacy
   }; 
@@ -27,7 +27,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 require('./config/db')();
 
 // Routes
-// app.use('/api/auth', require('./routes/auth.routes.js'));
+app.use('/api/local/auth', require('./routes/auth.routes.js'));
 app.use('/api/auth/', require('./routes/auth.google.routes.js'));
 app.use('/api/profil', require('./routes/profil.routes.js'));
 app.use('/api/questions', require('./routes/questions.routes.js'));
