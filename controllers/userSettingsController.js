@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 // GET user settings
 exports.getUserSettings = async (req, res, next) => {
@@ -23,6 +24,13 @@ exports.updateUserSettings = async (req, res, next) => {
     if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
     user.settings = req.body;
     await user.save();
+    // Créer une notification
+    await Notification.create({
+      userId: user._id,
+      title: 'Paramètres modifiés',
+      message: 'Vos paramètres ont bien été mis à jour.',
+      type: 'success',
+    });
     res.json(user.settings);
   } catch (err) {
     next(err);

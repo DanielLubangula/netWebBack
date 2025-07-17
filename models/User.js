@@ -14,7 +14,7 @@
  */ 
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
-
+const Notification = require('./Notification');
 
 
 const UserSchema = new mongoose.Schema({
@@ -54,5 +54,10 @@ UserSchema.pre('save', async function (next) {
 UserSchema.methods.comparePassword = async function (candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
+
+// Méthode utilitaire pour créer une notification pour un utilisateur
+// UserSchema.statics.notify = async function(userId, title, message, type = 'info') {
+//   return Notification.create({ userId, title, message, type });
+// };
 
 module.exports = mongoose.model('User', UserSchema);

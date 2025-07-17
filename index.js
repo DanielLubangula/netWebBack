@@ -38,6 +38,7 @@ app.use("/all/matches", require('./routes/allMatches.routes.js'));
 app.use('/api/news', require("./routes/news.routes"));
 app.use('/api/admin', require('./routes/admin.routes.js'));
 app.use('/api/user', require('./routes/userSettings.routes.js'));
+app.use('/api/notifications', require('./routes/notifications.routes.js'));
 
 // Création du serveur HTTP
 const server = http.createServer(app);
