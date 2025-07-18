@@ -18,8 +18,7 @@ const corsOptions = {
     optionsSuccessStatus: 200 // Pour les navigateurs legacy
   }; 
   
-  app.use(cors()); 
-  // app.use(cors(corsOptions)); 
+  app.use(cors(corsOptions)); 
 app.use(express.json());
 app.use(passport.initialize());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
