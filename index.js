@@ -58,6 +58,7 @@ app.use('/api/news', require("./routes/news.routes"));
 app.use('/api/admin', require('./routes/admin.routes.js'));
 app.use('/api/user', require('./routes/userSettings.routes.js'));
 app.use('/api/notifications', require('./routes/notifications.routes.js'));
+app.use('/api/chat', require('./routes/chat.routes.js'));
  
 app.get("/test", (req, res) => {
   res.json({ message: "API is working!" });

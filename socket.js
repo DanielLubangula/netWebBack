@@ -4,6 +4,7 @@ const path = require("path");
 const jwt = require("jsonwebtoken");
 const User = require("./models/User");
 const Match = require("./models/Match");
+const PublicMessage = require("./models/PublicMessage");
 
 let io;
 const onlineUsers = new Map();
@@ -575,6 +576,109 @@ const initializeSocket = (server) => {
          console.log("match fini two")
         io.to(roomId).emit("challengeFinished", results);
       });
+    });
+
+    // === CHAT PUBLIC ===
+    
+    // Rejoindre le chat public
+    socket.on("joinPublicChat", () => {
+      socket.join("public-chat");
+      console.log(`Utilisateur ${socket.userId} a rejoint le chat public`);
+    });
+
+    // Quitter le chat public
+    socket.on("leavePublicChat", () => {
+      socket.leave("public-chat");
+      console.log(`Utilisateur ${socket.userId} a quitté le chat public`);
+    });
+
+    // Nouveau message public
+    socket.on("newPublicMessage", async ({ text, replyTo }) => {
+      try {
+        if (!text || text.trim().length === 0) {
+          return socket.emit("publicMessageError", { message: "Le message ne peut pas être vide" });
+        }
+
+        if (text.length > 500) {
+          return socket.emit("publicMessageError", { message: "Le message ne peut pas dépasser 500 caractères" });
+        }
+
+        // Récupérer les informations de l'utilisateur
+        const user = await User.findById(socket.userId).select('username profilePicture');
+        if (!user) {
+          return socket.emit("publicMessageError", { message: "Utilisateur non trouvé" });
+        }
+
+        let replyData = null;
+        if (replyTo && replyTo.messageId) {
+          const originalMessage = await PublicMessage.findById(replyTo.messageId);
+          if (originalMessage && !originalMessage.isDeleted) {
+            replyData = {
+              messageId: originalMessage._id,
+              username: originalMessage.username,
+              text: originalMessage.text
+            };
+          }
+        }
+
+        const newMessage = new PublicMessage({
+          userId: socket.userId,
+          username: user.username,
+          profilePicture: user.profilePicture,
+          text: text.trim(),
+          replyTo: replyData
+        });
+
+        console.log('newMessage : ',newMessage)
+
+        await newMessage.save();
+
+        const formattedMessage = {
+          _id: newMessage._id,
+          text: newMessage.text,
+          username: newMessage.username,
+          profilePicture: newMessage.profilePicture.startsWith('http') 
+            ? newMessage.profilePicture 
+            : `${process.env.BACKEND_URL}${newMessage.profilePicture}`,
+          replyTo: newMessage.replyTo,
+          createdAt: newMessage.createdAt,
+          updatedAt: newMessage.updatedAt
+        };
+
+        // Diffuser le message à tous les utilisateurs du chat public
+        io.to("public-chat").emit("publicMessageReceived", formattedMessage);
+        
+        socket.emit("publicMessageSent", { message: "Message envoyé avec succès" });
+      } catch (error) {
+        console.error("Erreur lors de l'envoi du message public:", error);
+        socket.emit("publicMessageError", { message: "Erreur lors de l'envoi du message" });
+      }
+    });
+
+    // Supprimer un message public
+    socket.on("deletePublicMessage", async ({ messageId }) => {
+      try {
+        const message = await PublicMessage.findById(messageId);
+        
+        if (!message) {
+          return socket.emit("publicMessageError", { message: "Message non trouvé" });
+        }
+
+        if (message.userId.toString() !== socket.userId) {
+          return socket.emit("publicMessageError", { message: "Vous n'êtes pas autorisé à supprimer ce message" });
+        }
+
+        message.isDeleted = true;
+        await message.save();
+
+        // Notifier tous les utilisateurs de la suppression
+        io.to("public-chat").emit("publicMessageDeleted", { messageId });
+        
+        socket.emit("publicMessageDeleted", { message: "Message supprimé avec succès" });
+      } catch (error) {
+        console.error("Erreur lors de la suppression du message public:", error);
+        socket.emit("publicMessageError", { message: "Erreur lors de la suppression" });
+      }
     });
   });
 };
