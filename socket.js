@@ -251,7 +251,7 @@ const initializeSocket = (server) => {
             const user = await User.findById(userId).lean();
             if (user) {
               if (user.profilePicture) {
-                user.profilePicture = `${user.profilePicture}`;
+                user.profilePicture = `${process.env.BACKEND_URL}${user.profilePicture}`;
               }
               return { ...user, socketId };
             }

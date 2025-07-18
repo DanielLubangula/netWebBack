@@ -49,7 +49,7 @@ const initializeSocket = (server) => {
             const user = await User.findById(userId).lean(); // Récupérer les informations utilisateur depuis le modèle User
             if (user) {
               if (user.profilePicture) {
-          user.profilePicture = `http://localhost:5000${user.profilePicture}`; // Ajouter le préfixe au champ profilePicture
+          user.profilePicture = `${process.env.BACKEND_URL}${user.profilePicture}`; // Ajouter le préfixe au champ profilePicture
               }
               return { ...user, socketId }; // Ajouter le champ socketId aux données utilisateur
             }

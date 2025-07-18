@@ -22,7 +22,7 @@ exports.register = async (req, res) => {
         
         const enrichedUser = {
             ...userWithoutPassword,
-            profilePicture: userWithoutPassword.profilePicture ? `http://localhost:5000${userWithoutPassword.profilePicture}` : undefined
+            profilePicture: userWithoutPassword.profilePicture ? `${process.env.BACKEND_URL}${userWithoutPassword.profilePicture}` : undefined
         };
         
         res.status(201).json({ 
@@ -56,9 +56,10 @@ exports.login = async (req, res) => {
         const userWithoutPassword = { 
             ...user.toObject(), 
             password: undefined, 
-            profilePicture: user.profilePicture ? `http://localhost:5000${user.profilePicture}` : undefined 
+            profilePicture: user.profilePicture ? `${process.env.BACKEND_URL}${user.profilePicture}` : undefined 
         };
-
+        console.log('Utilisateur connecté:', userWithoutPassword);
+        // Répondre avec le token et les informations de l'utilisateur
         res.status(200).json({ message: 'Connexion réussie', token, user: userWithoutPassword });
     } catch (error) {
         console.log('Erreur lors de la connexion:', error);

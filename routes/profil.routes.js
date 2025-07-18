@@ -33,7 +33,7 @@ router.post('/image', authMiddleware, upload.single('profileImage'), async (req,
         user.profilePicture = `/uploads/profil/${req.file.filename}`;
         await user.save();
 
-    res.status(200).json({ message: 'Photo de profil mise à jour avec succès', imageUrl: "http://localhost:5000" + user.profilePicture });
+    res.status(200).json({ message: 'Photo de profil mise à jour avec succès', imageUrl: process.env.BACKEND_URL + user.profilePicture });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Erreur serveur' });

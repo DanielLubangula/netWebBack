@@ -13,7 +13,7 @@ require('./config/passport');
 const app = express(); 
 // Configuration CORS plus précise
 const corsOptions = {
-    origin: process.env.FRONTEND_URL || 'https://netwebquiz.onrender.com/', // Remplacez par votre URL frontend
+    origin: process.env.FRONTEND_URL, // Utilise la variable d'environnement
     credentials: true, // Autorise les credentials
     optionsSuccessStatus: 200 // Pour les navigateurs legacy
   }; 
@@ -39,7 +39,7 @@ app.use('/api/news', require("./routes/news.routes"));
 app.use('/api/admin', require('./routes/admin.routes.js'));
 app.use('/api/user', require('./routes/userSettings.routes.js'));
 app.use('/api/notifications', require('./routes/notifications.routes.js'));
-
+ 
 app.get("/test", (req, res) => {
   res.json({ message: "API is working!" });
 });
@@ -49,7 +49,7 @@ const server = http.createServer(app);
 
 // Initialisation de Socket.io
 initializeSocket(server);
-
+  
 // Démarrage du serveur
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`🚀 Serveur démarré sur le port ${PORT}`));
