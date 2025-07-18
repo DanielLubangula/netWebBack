@@ -269,6 +269,19 @@ const initializeSocket = (server) => {
       }
     });
 
+    // Obtenir la liste des matchs en direct
+    socket.on("getLiveMatches", async () => {
+      try {
+        // Récupère les matchs en cours (status: "in_progress")
+        const matches = await Match.find({ status: "in_progress" })
+          .select("roomId players theme createdAt")
+          .lean();
+        socket.emit("liveMatchesList", matches);
+      } catch (err) {
+        socket.emit("liveMatchesList", { error: "Erreur lors de la récupération des matchs" });
+      }
+    });
+
     // Envoyer un défi
     socket.on("sendChallenge", async ({ toUserId, challengeData }) => {
       if (
