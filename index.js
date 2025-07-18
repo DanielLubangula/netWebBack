@@ -12,13 +12,32 @@ require('./config/passport');
 
 const app = express(); 
 // Configuration CORS plus précise
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:5173'
+];
+
 const corsOptions = {
-    origin: process.env.FRONTEND_URL, // Utilise la variable d'environnement
-    credentials: true, // Autorise les credentials
-    optionsSuccessStatus: 200 // Pour les navigateurs legacy
-  }; 
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+
+// const corsOptions = {
+//     origin: process.env.FRONTEND_URL, // Utilise la variable d'environnement
+//     credentials: true, // Autorise les credentials
+//     optionsSuccessStatus: 200 // Pour les navigateurs legacy
+//   }; 
   
-  app.use(cors(corsOptions)); 
+//   app.use(cors(corsOptions)); 
 app.use(express.json());
 app.use(passport.initialize());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
