@@ -12,6 +12,8 @@ const activeMatches = new Map();
 const matchSpectators = new Map(); // Nouveau: pour suivre les spectateurs
 const MATCH_TIMEOUT = 30 * 60 * 1000;
 const QUESTIONS_DIR = path.join(__dirname, "data", "questions");
+// Ajout d'un timeout par question pour éviter le blocage si personne ne répond
+const QUESTION_TIMEOUT = 20 * 1000; // 20 secondes par question max (ajustable)
 
 // Fonction pour parser les questions
 function parseQuestions(content, questionCount) {
@@ -482,24 +484,50 @@ const initializeSocket = (server) => {
             p.answers.some((a) => a.questionId === questionId)
           );
 
-          console.log("allA : ", allAnswered)
+          // Timeout pour forcer la fin de la question si personne ne répond
+          if (!match._questionTimeouts) match._questionTimeouts = {};
+          if (!match._questionTimeouts[questionId]) {
+            match._questionTimeouts[questionId] = setTimeout(async () => {
+              // Si la question n'est pas terminée, on force la fin
+              const refreshedMatch = await Match.findOne({ roomId });
+              const allAnsweredNow = refreshedMatch.players.every((p) =>
+                p.answers.some((a) => a.questionId === questionId)
+              );
+              if (!allAnsweredNow) {
+                // On passe à la question suivante ou on termine
+                const currentQuestionIndex = refreshedMatch.questions.findIndex(
+                  (q) => q.id === questionId
+                );
+                const nextIndex = currentQuestionIndex + 1;
+                if (nextIndex < refreshedMatch.questions.length) {
+                  io.to(roomId).emit("forceNextQuestion", {
+                    newIndex: nextIndex,
+                  });
+                } else {
+                  // Fin du match forcée
+                  const results = await refreshedMatch.calculateScores();
+                  io.to(roomId).emit("challengeFinished", results);
+                  cleanupMatch(roomId);
+                  await refreshedMatch.save();
+                }
+              }
+            }, QUESTION_TIMEOUT);
+          }
 
           if (allAnswered) {
+            clearTimeout(match._questionTimeouts?.[questionId]);
             setTimeout(() => {
               const currentQuestionIndex = match.questions.findIndex(
                 (q) => q.id === questionId
               );
               const nextIndex = currentQuestionIndex + 1;
-
-              console.log('nextIndex :', nextIndex)
-              console.log('match.questions.length :', match.questions.length)
               if (nextIndex < match.questions.length) {
                 io.to(roomId).emit("forceNextQuestion", {
                   newIndex: nextIndex,
                 });
               } else {
                 // Fin du match
-                const results = match.calculateScores().then((results) => {
+                match.calculateScores().then((results) => {
                   io.to(roomId).emit("challengeFinished", results);
                   cleanupMatch(roomId);
                   match.save();
