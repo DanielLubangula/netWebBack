@@ -4,6 +4,7 @@ const Match = require('../models/Match');
 const Notification = require('../models/Notification');
 const authMiddleware = require('../middlewares/authMiddleware');
 const router = express.Router();
+const User = require('../models/User')
 // Récupérer tous les commentaires d'un match
 router.get('/:matchId', async (req, res) => {
   try {
@@ -34,14 +35,12 @@ router.post('/:matchId', authMiddleware, async (req, res) => {
     console.log("Match trouvé:", match ? "Oui" : "Non");
     
     if (!match) {
-      console.log("Match non trouvé avec roomId:", matchId);
       return res.status(404).json({ error: 'Match not found' });
     }
 
     // Vérifier que le match est terminé
     console.log("Statut du match:", match.status);
     if (match.status !== 'completed' && match.status !== 'abandoned') {
-      console.log("Match non terminé, statut:", match.status);
       return res.status(400).json({ error: 'Can only comment on completed matches' });
     }
 
@@ -53,14 +52,10 @@ router.post('/:matchId', authMiddleware, async (req, res) => {
       message
     });
 
-    console.log("Sauvegarde du commentaire...");
     await comment.save();
-    console.log("Commentaire sauvegardé avec succès, ID:", comment._id);
 
     // Populate l'auteur pour la réponse
-    console.log("Population de l'auteur...");
     await comment.populate('author', 'username profilePicture');
-    console.log("Auteur populé:", comment.author);
 
     // Envoyer des notifications aux joueurs du match
     const matchPlayers = match.players.map(player => player.userId.toString());
@@ -70,11 +65,13 @@ router.post('/:matchId', authMiddleware, async (req, res) => {
       // Si l'auteur fait partie du match, notifier l'autre joueur
       const otherPlayerId = matchPlayers.find(id => id !== authorId);
       if (otherPlayerId) {
+        const info = await User.findById(req.user.id)
+        console.log('*********** 2: ', info.username)
         await Notification.create({
           userId: otherPlayerId,
           type: 'match_comment',
           title: 'Nouveau commentaire sur votre match',
-          message: `${req.user.username} a commenté votre match`,
+          message: `${info.username} a commenté votre match`,
           data: {
             matchId,
             commentId: comment._id,
