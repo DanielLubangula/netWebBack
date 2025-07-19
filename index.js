@@ -18,7 +18,7 @@ const allowedOrigins = [
 ];     
 
 const corsOptions = {
-  origin: function (origin, callback) {
+  origin: function (origin, callback) {  
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -60,6 +60,7 @@ app.use('/api/admin', require('./routes/admin.routes.js'));
 app.use('/api/user', require('./routes/userSettings.routes.js'));
 app.use('/api/notifications', require('./routes/notifications.routes.js'));
 app.use('/api/chat', require('./routes/chat.routes.js'));
+app.use('/api/match-comments', require('./routes/matchComments.routes.js'));
  
 app.get("/test", (req, res) => {
   res.json({ message: "API is working!" });
