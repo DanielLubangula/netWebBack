@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const User = require("./models/User");
 const Match = require("./models/Match");
 const PublicMessage = require("./models/PublicMessage");
+const Notification = require("./models/Notification");
 
 let io;
 const onlineUsers = new Map();
@@ -610,6 +611,8 @@ const initializeSocket = (server) => {
         }
 
         let replyData = null;
+        let originalMessageAuthor = null;
+        
         if (replyTo && replyTo.messageId) {
           const originalMessage = await PublicMessage.findById(replyTo.messageId);
           if (originalMessage && !originalMessage.isDeleted) {
@@ -618,6 +621,9 @@ const initializeSocket = (server) => {
               username: originalMessage.username,
               text: originalMessage.text
             };
+            
+            // Récupérer l'auteur du message original pour la notification
+            originalMessageAuthor = await User.findById(originalMessage.userId).select('username');
           }
         }
 
@@ -633,6 +639,35 @@ const initializeSocket = (server) => {
 
         await newMessage.save();
 
+        // Envoyer une notification à l'auteur du message original si c'est une réponse
+        if (replyData && originalMessageAuthor && originalMessageAuthor._id.toString() !== socket.userId.toString()) {
+          try {
+            const notification = new Notification({
+              userId: originalMessageAuthor._id,
+              title: 'Nouvelle réponse à votre message',
+              message: `${user.username} a répondu à votre message dans le chat public`,
+              type: 'info'
+            });
+            await notification.save();
+            console.log(`Notification envoyée à ${originalMessageAuthor.username} pour la réponse de ${user.username}`);
+            
+            // Envoyer la notification en temps réel si l'utilisateur est en ligne
+            const originalAuthorSocketId = onlineUsers.get(originalMessageAuthor._id.toString());
+            if (originalAuthorSocketId) {
+              io.to(originalAuthorSocketId).emit('newNotification', {
+                id: notification._id,
+                title: notification.title,
+                message: notification.message,
+                type: notification.type,
+                createdAt: notification.createdAt
+              });
+            }
+          } catch (notificationError) {
+            console.error('Erreur lors de l\'envoi de la notification:', notificationError);
+            // Ne pas faire échouer l'envoi du message si la notification échoue
+          }
+        }
+ 
         const formattedMessage = {
           _id: newMessage._id,
           text: newMessage.text,

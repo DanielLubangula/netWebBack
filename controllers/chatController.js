@@ -1,5 +1,6 @@
 const PublicMessage = require('../models/PublicMessage');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 // Récupérer tous les messages publics
 exports.getPublicMessages = async (req, res) => {
@@ -67,6 +68,8 @@ exports.sendPublicMessage = async (req, res) => {
         }
 
         let replyData = null;
+        let originalMessageAuthor = null;
+        
         if (replyTo && replyTo.messageId) {
             const originalMessage = await PublicMessage.findById(replyTo.messageId);
             if (originalMessage && !originalMessage.isDeleted) {
@@ -75,6 +78,9 @@ exports.sendPublicMessage = async (req, res) => {
                     username: originalMessage.username,
                     text: originalMessage.text
                 };
+                
+                // Récupérer l'auteur du message original pour la notification
+                originalMessageAuthor = await User.findById(originalMessage.userId).select('username');
             }
         }
 
@@ -89,6 +95,23 @@ exports.sendPublicMessage = async (req, res) => {
         console.log('newMessage : ', newMessage)
 
         await newMessage.save();
+
+        // Envoyer une notification à l'auteur du message original si c'est une réponse
+        if (replyData && originalMessageAuthor && originalMessageAuthor._id.toString() !== userId.toString()) {
+            try {
+                const notification = new Notification({
+                    userId: originalMessageAuthor._id,
+                    title: 'Nouvelle réponse à votre message',
+                    message: `${user.username} a répondu à votre message dans le chat public`,
+                    type: 'info'
+                });
+                await notification.save();
+                console.log(`Notification envoyée à ${originalMessageAuthor.username} pour la réponse de ${user.username}`);
+            } catch (notificationError) {
+                console.error('Erreur lors de l\'envoi de la notification:', notificationError);
+                // Ne pas faire échouer l'envoi du message si la notification échoue
+            }
+        }
 
         // Récupérer le message avec les données complètes
         const savedMessage = await PublicMessage.findById(newMessage._id)

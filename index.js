@@ -15,7 +15,7 @@ const app = express();
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   'http://localhost:5173'
-];
+];     
 
 const corsOptions = {
   origin: function (origin, callback) {
@@ -51,6 +51,7 @@ app.use('/api/auth/', require('./routes/auth.google.routes.js'));
 app.use('/api/profil', require('./routes/profil.routes.js'));
 app.use('/api/questions', require('./routes/questions.routes.js'));
 app.use('/api/matches', require('./routes/matches.routes.js'));
+app.use('/api/all-matches', require('./routes/allMatches.routes.js'));
 app.use('/api/online-users', require('./routes/online.routes.js'));
 app.use("/all/matches", require('./routes/allMatches.routes.js'));
 // Routes
